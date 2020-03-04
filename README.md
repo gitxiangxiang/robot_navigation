@@ -6,7 +6,7 @@
 
    答：我采取了算数平均值的计算方法，并分别采用了加权和不加权的方式，从效果上来看没有太大差别。
 
-   <img src="D:\program\python\PyCharm\robot_navigation\截图\problem1.png" alt="image-20200304202900125" style="zoom: 33%;" />
+   <img src="https://github.com/gitxiangxiang/robot_navigation/blob/master/%E6%88%AA%E5%9B%BE/problem1.png" alt="问题1的截图" style="zoom: 33%;" />
 
    ```python
    # 不加权值做算数平均值
@@ -21,7 +21,7 @@
 
 2. ### 修改weights的分布为帕累托分布（当前使用的是正态分布）
 
-   <img src="D:\program\python\PyCharm\robot_navigation\截图\problem2.png" alt="image-20200304201806520" style="zoom:33%;" />
+   <img src="https://github.com/gitxiangxiang/robot_navigation/blob/master/%E6%88%AA%E5%9B%BE/problem2.png" alt="问题2截图" style="zoom:33%;" />
 
    我不太清楚我注释掉的采用正态分布的那条语句是如何起作用的，因此我根据我自己的理解，将robot与landmarks之间的距离和粒子与landmarks之间的距离作差并取绝对值，经帕累托分布后作为weights并连乘。
 
@@ -44,7 +44,7 @@
 
    在这个问题上我有点疑惑，因为原有代码已经包含了一个符合标准正态分布的误差，可能我对“随机误差”这个概念的理解不准确，实话说我也不清楚什么是随机误差，因此我就在原来的基础上增加了一个∈[-5, 5)的随机数。尽管此处距离为负没有什么影响，但我还是打算保证其为正值。观察定位结果没有很大变化。
 
-   <img src="D:\program\python\PyCharm\robot_navigation\截图\problem3.png" alt="image-20200304203329914" style="zoom:33%;" />
+   <img src="https://github.com/gitxiangxiang/robot_navigation/blob/master/%E6%88%AA%E5%9B%BE/problem3.png" alt="问题3截图" style="zoom:33%;" />
 
    ```python
    # 修改为随机误差（在原来的基础上添加了[-5,5)的随机误差）
@@ -57,7 +57,7 @@
 
    经过观察，在将weights的分布修改为帕累托分布后，重采样的粒子数变得很少。我刚开始盲目的将帕累托分布中的参数设为3，在我尝试将参数设为0.1时，可见的粒子数变多了。但这还未涉及修改particle filtering过程。可能是我对该算法涉及的原理不理解，而且我也没有观察到当前模型有哪些不足，因此没有想出来如何修改。不过我觉得重采样那部分有改进的空间。而且每次定位可以再加一些随机粒子进去。增加landmark的数量应该也会提高准确度。
 
-   <img src="D:\program\python\PyCharm\robot_navigation\截图\problem4_1.png" alt="image-20200304204033020" style="zoom:33%;" />
+   <img src="https://github.com/gitxiangxiang/robot_navigation/blob/master/%E6%88%AA%E5%9B%BE/problem4_1.png" alt="问题4截图" style="zoom:33%;" />
 
 ## 二、过程与总结
 
