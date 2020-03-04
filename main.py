@@ -32,7 +32,7 @@ def mouseCallback(event, x, y, flags, null):
     global previous_y
     global zs
 
-    #center为实际位置
+    # center为实际位置
     center = np.array([[x, y]])
     # 用于画轨迹
     trajectory = np.vstack((trajectory, np.array([x, y])))
@@ -55,9 +55,8 @@ def mouseCallback(event, x, y, flags, null):
         predict(particles, u, std, dt=1.)
         # landmarks 与 robot之间的距离，加入了按标准正态分布的误差
         # 修改为随机误差（在原来的基础上添加了10以内的随机误差）
-        zs = (np.linalg.norm(landmarks - center, axis=1)
-              + (np.random.randn(NL) * sensor_std_err) + (np.random.rand(NL) * 10))
-        # zs = (np.linalg.norm(landmarks - center, axis=1) + (np.random.randn(NL) * sensor_std_err))
+        zs = (np.linalg.norm(landmarks - center, axis=1) + (np.random.randn(NL) * sensor_std_err))
+        zs = [i+(np.random.rand()-0.5)*sensor_std_err*2 if i > sensor_std_err else i*np.random.rand() for i in zs]
         update(particles, weights, z=zs, R=50, landmarks=landmarks)
 
         indexes = systematic_resample(weights)
@@ -99,7 +98,7 @@ def update(particles, weights, z, R, landmarks):
         # distance为每个粒子与指定landmark之间的距离
         distance = np.power((particles[:, 0] - landmark[0]) ** 2 + (particles[:, 1] - landmark[1]) ** 2, 0.5)
         # 修改为帕累托分布，还不知道R变量的作用，所以忽略了它
-        weights *= scipy.stats.pareto.pdf(abs(z[i]-distance), 3)
+        weights *= scipy.stats.pareto.pdf(abs(z[i]-distance), 0.1)
         # weights *= scipy.stats.norm(distance, R).pdf(z[i])
 
     weights += 1.e-300  # avoid round-off to zero

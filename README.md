@@ -1,1 +1,68 @@
+# 题目名称：Robot Navigation
 
+## 一、问题解答：
+
+1. ### 基于particles的位置，计算最终定位robot的唯一位置并输出到屏幕上，说明计算方式。
+
+   答：我采取了算数平均值的计算方法，并分别采用了加权和不加权的方式，从效果上来看没有太大差别。
+
+   <img src="D:\program\python\PyCharm\robot_navigation\截图\problem1.png" alt="image-20200304202900125" style="zoom: 33%;" />
+
+   ```python
+   # 不加权值做算数平均值
+   pred_loc = [sum(particles[:, 0])/N, sum(particles[:, 1])/N]
+   cv2.putText(img, "predicted location", (30, 80), 1, 1.0, (0, 0, 255))
+   cv2.putText(img, "(%.2f, %.2f)" % (pred_loc[0], pred_loc[1]), (200, 80), 1, 1.0, (0, 0, 255))
+   # 加权算数平均值
+   mean_x = np.average(particles[:, 0], weights=weights)
+   mean_y = np.average(particles[:, 1], weights=weights)
+   cv2.putText(img, "predicted location(with weights) (%.2f, %.2f)" % (mean_x, mean_y), (30, 120), 1, 1.0, (0, 0, 255))
+   ```
+
+2. ### 修改weights的分布为帕累托分布（当前使用的是正态分布）
+
+   <img src="D:\program\python\PyCharm\robot_navigation\截图\problem2.png" alt="image-20200304201806520" style="zoom:33%;" />
+
+   我不太清楚我注释掉的采用正态分布的那条语句是如何起作用的，因此我根据我自己的理解，将robot与landmarks之间的距离和粒子与landmarks之间的距离作差并取绝对值，经帕累托分布后作为weights并连乘。
+
+   ```python
+   def update(particles, weights, z, R, landmarks):
+       weights.fill(1.)
+       for i, landmark in enumerate(landmarks):
+           # distance为每个粒子与指定landmark之间的距离
+           distance = np.power((particles[:, 0] - landmark[0]) ** 2 + (particles[:, 1] - landmark[1]) ** 2, 0.5)
+           # 修改为帕累托分布，还不知道R变量的作用，所以忽略了它
+           weights *= scipy.stats.pareto.pdf(abs(z[i]-distance), 3)
+           # weights *= scipy.stats.norm(distance, R).pdf(z[i])
+   
+       weights += 1.e-300  # avoid round-off to zero
+       weights /= sum(weights)
+   
+   ```
+
+3. ### 为landmark和robot之间的距离增加随机误差，观察定位结果
+
+   在这个问题上我有点疑惑，因为原有代码已经包含了一个符合标准正态分布的误差，可能我对“随机误差”这个概念的理解不准确，实话说我也不清楚什么是随机误差，因此我就在原来的基础上增加了一个∈[-5, 5)的随机数。尽管此处距离为负没有什么影响，但我还是打算保证其为正值。观察定位结果没有很大变化。
+
+   <img src="D:\program\python\PyCharm\robot_navigation\截图\problem3.png" alt="image-20200304203329914" style="zoom:33%;" />
+
+   ```python
+   # 修改为随机误差（在原来的基础上添加了[-5,5)的随机误差）
+   zs = (np.linalg.norm(landmarks - center, axis=1) + (np.random.randn(NL) * sensor_std_err))
+   zs = [i+(np.random.rand()-0.5)*sensor_std_err*2 if i > sensor_std_err else i*np.random.rand() for i in zs]
+           
+   ```
+
+4. ### 修改particle filtering过程，消除随机误差对定位结果的影响（不一定完成，可讨论思路）
+
+   经过观察，在将weights的分布修改为帕累托分布后，重采样的粒子数变得很少。我刚开始盲目的将帕累托分布中的参数设为3，在我尝试将参数设为0.1时，可见的粒子数变多了。但这还未涉及修改particle filtering过程。可能是我对该算法涉及的原理不理解，而且我也没有观察到当前模型有哪些不足，因此没有想出来如何修改。不过我觉得重采样那部分有改进的空间。而且每次定位可以再加一些随机粒子进去。增加landmark的数量应该也会提高准确度。
+
+   <img src="D:\program\python\PyCharm\robot_navigation\截图\problem4_1.png" alt="image-20200304204033020" style="zoom:33%;" />
+
+## 二、过程与总结
+
+我首先在网上查阅了particles filtering算法的基本流程。在看了几篇帖子并似懂非懂之后，我开始阅读代码。由于我的Python水平仅限于简单的语法，涉及的这些库的方法都不了解，因此只能一个一个查，不过毕竟代码比较短，很快就把除了核心算法之外的代码看完了。之后我从鼠标回调的函数开始一行一行阅读，这部分花了不少时间，凭着一行行调试，查看变量的内容以及多次重复才大体看懂。之后修改就比较容易了。
+
+### 对particle filtering的理解
+
+这个算法很像加权平均数的思想，而且利用大量粒子附带一定误差的运动来减少定位的误差。
